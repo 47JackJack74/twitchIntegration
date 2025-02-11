@@ -4,24 +4,35 @@
     <title>WebSocket Example</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
+        /* Стили для гифок */
         .square {
             width: 50px;
             height: 50px;
-            background-color: red;
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            transition: left 1s linear;
+            transition: left 0.8s linear;
         }
+
+        /* Стили для текста */
         .square-text {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 70px;
-            pointer-events: none;
-            transition: left 1s linear;
-        }
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 70px;
+    pointer-events: none;
+    transition: left 0.8s linear;
+
+    /* Оформление текста */
+    font-size: 12px;
+    color: white;
+    padding: 5px 10px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 5px;
+    display: inline-block;
+    text-align: center;
+}
     </style>
 </head>
 <body>
@@ -34,18 +45,37 @@
         const socket = io();
         let randomNumber = 0;
 
+        // Функция для создания элемента с гифкой
+        function createGifElement(src) {
+            const img = document.createElement('img');
+            img.src = src; // Устанавливаем путь к гифке
+            img.classList.add('square'); // Применяем класс .square для стилей
+            img.style.width = '50px'; // Устанавливаем размер изображения
+            img.style.height = '50px';
+            return img;
+        }
+
+        // Функция анимации гифки
         function animateSquare(square, textElement, currentLeft, moveState) {
-            const speed = Math.random() * (180 - 30) + 30;
+            const speed = Math.random() * (100 - 30) + 30;
+
+            // Обновляем позицию в зависимости от состояния движения
             if (moveState === 1) {
                 currentLeft += speed;
+                square.src = '/static/sprites/Right.gif'; // Движение вправо
             } else if (moveState === -1) {
                 currentLeft -= speed;
+                square.src = '/static/sprites/Left.gif'; // Движение влево
+            } else {
+                square.src = '/static/sprites/Stay.gif'; // Стоит на месте
             }
 
+            // Ограничение movements внутри экрана
             currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
             square.style.left = `calc(50% + ${currentLeft}px)`;
             textElement.style.left = `calc(50% + ${currentLeft}px)`;
 
+            // Генерация нового состояния через случайный таймаут
             const randomTimeout = Math.random() * (1000 - 500) + 500;
             setTimeout(() => {
                 const newMoveState = chooseRandomState();
@@ -53,23 +83,24 @@
             }, randomTimeout);
         }
 
+        // Функция выбора случайного состояния движения
         function chooseRandomState() {
             randomNumber = Math.random();
             let moveState;
             if (randomNumber < 0.7) {
-                moveState = 0;
+                moveState = 0; // Стоит на месте
             } else if (randomNumber < 0.85) {
-                moveState = 1;
+                moveState = 1; // Движение вправо
             } else {
-                moveState = -1;
+                moveState = -1; // Движение влево
             }
             return moveState;
         }
 
+        // Обработка сообщения о начале движения
         socket.on('server_message', function(data) {
             if (data.start_moving) {
-                const square = document.createElement('div');
-                square.classList.add('square');
+                const square = createGifElement('sprites/Stay.gif'); // Начальное состояние "стойка"
                 squaresContainer.appendChild(square);
 
                 const textElement = document.createElement('div');
@@ -83,18 +114,17 @@
             }
         });
 
+        // Обработка сообщения об удалении
         socket.on('delete_message', function(data) {
             const textToDelete = data.text;
             const squareElements = squaresContainer.querySelectorAll('.square-text');
-             squareElements.forEach(textElement => {
-                 if(textElement.textContent == textToDelete){
+            squareElements.forEach(textElement => {
+                if (textElement.textContent == textToDelete) {
                     const square = textElement.previousElementSibling;
                     squaresContainer.removeChild(square);
-                  squaresContainer.removeChild(textElement);
-
-                 }
-             });
-
+                    squaresContainer.removeChild(textElement);
+                }
+            });
         });
     </script>
 </body>
