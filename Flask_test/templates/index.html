@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Example</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        .square {
+            width: 50px;
+            height: 50px;
+            background-color: red;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: left 1s linear;
+        }
+        .square-text {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 70px;
+            pointer-events: none;
+            transition: left 1s linear;
+        }
+    </style>
+</head>
+<body>
+    <div id="text-container"></div>
+    <div id="squares-container"></div>
+    <div id="random-number"></div>
+
+    <script>
+        const squaresContainer = document.getElementById('squares-container');
+        const socket = io();
+        let randomNumber = 0;
+
+        function animateSquare(square, textElement, currentLeft, moveState) {
+            const speed = Math.random() * (180 - 30) + 30;
+            if (moveState === 1) {
+                currentLeft += speed;
+            } else if (moveState === -1) {
+                currentLeft -= speed;
+            }
+
+            currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
+            square.style.left = `calc(50% + ${currentLeft}px)`;
+            textElement.style.left = `calc(50% + ${currentLeft}px)`;
+
+            const randomTimeout = Math.random() * (1000 - 500) + 500;
+            setTimeout(() => {
+                const newMoveState = chooseRandomState();
+                animateSquare(square, textElement, currentLeft, newMoveState);
+            }, randomTimeout);
+        }
+
+        function chooseRandomState() {
+            randomNumber = Math.random();
+            let moveState;
+            if (randomNumber < 0.7) {
+                moveState = 0;
+            } else if (randomNumber < 0.85) {
+                moveState = 1;
+            } else {
+                moveState = -1;
+            }
+            return moveState;
+        }
+
+        socket.on('server_message', function(data) {
+            if (data.start_moving) {
+                const square = document.createElement('div');
+                square.classList.add('square');
+                squaresContainer.appendChild(square);
+
+                const textElement = document.createElement('div');
+                textElement.classList.add('square-text');
+                textElement.textContent = data.text;
+                squaresContainer.appendChild(textElement);
+
+                let currentLeft = 0;
+                const moveState = chooseRandomState();
+                animateSquare(square, textElement, currentLeft, moveState);
+            }
+        });
+
+        socket.on('delete_message', function(data) {
+            const textToDelete = data.text;
+            const squareElements = squaresContainer.querySelectorAll('.square-text');
+             squareElements.forEach(textElement => {
+                 if(textElement.textContent == textToDelete){
+                    const square = textElement.previousElementSibling;
+                    squaresContainer.removeChild(square);
+                  squaresContainer.removeChild(textElement);
+
+                 }
+             });
+
+        });
+    </script>
+</body>
+</html>
