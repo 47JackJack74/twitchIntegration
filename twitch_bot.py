@@ -80,12 +80,25 @@ class Bot(commands.Bot):
         await self.handle_commands(message)
 
     async def event_join(self, channel: Channel, user: User):
+        """
         print(user.name)
         await channel.send(f"Ку {user.name}")
+        """
+        url = 'http://127.0.0.1:5000/display_text'
+        result = call_js_method(url, "display " + user.name)
+        if result != False:
+            print(result)
 
     async def event_part(self, user: User):
+        """
         print(user.name)
         await user.channel.send(f"ББ {user.name}")
+        """
+
+        url = 'http://127.0.0.1:5000/delete_text'
+        result = call_js_method(url, "delete " + user.name)
+        if result != False:
+            print(result)
 
     #???
     async def event_error(self, error, data):
@@ -108,6 +121,16 @@ class Bot(commands.Bot):
         revoke_token(self.token)
         ###await ctx.send(f'Hello {ctx.author.name}!')
 
+
+def call_js_method(url, command):
+    """Отправляет POST-запрос на URL, чтобы вызвать JS-метод."""
+    try:
+        response = requests.post(url, data=command)  # Отправляем команду в теле запроса
+        response.raise_for_status()
+        return response.text #  Возвращаем True при успешном запросе
+    except requests.exceptions.RequestException as e:
+        print(f"Error during request: {response.status_code}, {response.text}")
+        return False
 
 bot = Bot()
 bot.run()
