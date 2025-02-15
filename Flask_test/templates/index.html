@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>WebSocket Example</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         /* Стили для гифок */
         .square {
-            width: 50px;
-            height: 50px;
+            width: 100px;
+            height: 100px;
             position: absolute;
             bottom: 20px;
             left: 50%;
@@ -17,24 +18,25 @@
 
         /* Стили для текста */
         .square-text {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 70px;
-    pointer-events: none;
-    transition: left 0.8s linear;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 70px;
+            pointer-events: none;
+            transition: left 0.8s linear;
 
-    /* Оформление текста */
-    font-size: 12px;
-    color: white;
-    padding: 5px 10px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border-radius: 5px;
-    display: inline-block;
-    text-align: center;
-}
+            /* Оформление текста */
+            font-size: 12px;
+            color: white;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            display: inline-block;
+            text-align: center;
+        }
     </style>
 </head>
+
 <body>
     <div id="text-container"></div>
     <div id="squares-container"></div>
@@ -50,8 +52,8 @@
             const img = document.createElement('img');
             img.src = src; // Устанавливаем путь к гифке
             img.classList.add('square'); // Применяем класс .square для стилей
-            img.style.width = '50px'; // Устанавливаем размер изображения
-            img.style.height = '50px';
+            img.style.width = '100px'; // Устанавливаем размер изображения
+            img.style.height = '100px';
             return img;
         }
 
@@ -67,7 +69,7 @@
                 currentLeft -= speed;
                 square.src = '/static/sprites/Left.gif'; // Движение влево
             } else {
-                square.src = '/static/sprites/Stay.gif'; // Стоит на месте
+                square.src = '/static/sprites/Stay2.gif'; // Стоит на месте
             }
 
             // Ограничение movements внутри экрана
@@ -98,7 +100,7 @@
         }
 
         // Обработка сообщения о начале движения
-        socket.on('server_message', function(data) {
+        socket.on('server_message', function (data) {
             if (data.start_moving) {
                 const square = createGifElement('sprites/Stay.gif'); // Начальное состояние "стойка"
                 squaresContainer.appendChild(square);
@@ -115,7 +117,7 @@
         });
 
         // Обработка сообщения об удалении
-        socket.on('delete_message', function(data) {
+        socket.on('delete_message', function (data) {
             const textToDelete = data.text;
             const squareElements = squaresContainer.querySelectorAll('.square-text');
             squareElements.forEach(textElement => {
@@ -128,4 +130,5 @@
         });
     </script>
 </body>
+
 </html>
