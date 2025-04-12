@@ -21,7 +21,7 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            bottom: 70px;
+            bottom: 110px;
             pointer-events: none;
             transition: left 0.8s linear;
 
@@ -99,20 +99,25 @@
             return moveState;
         }
 
+        // Функция для создания нового квадрата и текста
+        function createSquareAndText(text) {
+            const square = createGifElement('/static/sprites/Stay.gif'); // Начальное состояние "стойка"
+            squaresContainer.appendChild(square);
+
+            const textElement = document.createElement('div');
+            textElement.classList.add('square-text');
+            textElement.textContent = text;
+            squaresContainer.appendChild(textElement);
+
+            let currentLeft = 0;
+            const moveState = chooseRandomState();
+            animateSquare(square, textElement, currentLeft, moveState);
+        }
+
         // Обработка сообщения о начале движения
         socket.on('server_message', function (data) {
             if (data.start_moving) {
-                const square = createGifElement('sprites/Stay.gif'); // Начальное состояние "стойка"
-                squaresContainer.appendChild(square);
-
-                const textElement = document.createElement('div');
-                textElement.classList.add('square-text');
-                textElement.textContent = data.text;
-                squaresContainer.appendChild(textElement);
-
-                let currentLeft = 0;
-                const moveState = chooseRandomState();
-                animateSquare(square, textElement, currentLeft, moveState);
+                createSquareAndText(data.text); // Создаем новый квадрат и текст
             }
         });
 
@@ -128,6 +133,34 @@
                 }
             });
         });
+
+        // Обработка сообщения об очистке
+        socket.on('clear_message', function (data) {
+            console.log("Received clear_message event");  // Логирование
+            while (squaresContainer.firstChild) {
+                squaresContainer.removeChild(squaresContainer.firstChild);
+            }
+        });
+
+        // При загрузке страницы получаем текущее состояние squares
+        async function loadSquares() {
+            try {
+                const response = await fetch('/get_squares'); // Получаем данные с сервера
+                const texts = await response.json(); // Парсим JSON-ответ
+                texts.forEach(text => createSquareAndText(text)); // Создаем элементы для каждого текста
+            } catch (error) {
+                console.error("Ошибка при получении данных:", error);
+            }
+        }
+
+        // Вызываем функцию загрузки при загрузке страницы
+        window.onload = loadSquares;
+
+        // Логируем ошибки подключения
+        socket.on('connect_error', function (err) {
+            console.error("WebSocket connection error:", err);
+        });
+
     </script>
 </body>
 

@@ -4,6 +4,11 @@ import logging
 import sqlite3
 import os
 import requests
+import sys
+
+import threading
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Flask_test')))
+import flask_server # type: ignore
 
 import asqlite
 import twitchio
@@ -21,7 +26,6 @@ CLIENT_SECRET = os.getenv("SECRET") # The CLIENT SECRET from the Twitch Dev Cons
 BOT_ID = os.getenv("BOT_ID")  # The Account ID of the bot user...
 OWNER_ID = os.getenv("OWNER_ID")  # Your personal User ID..
 PREFIX = os.getenv("PREFIX")
-
 
 class Bot(commands.Bot):
     def __init__(self, *, token_database: asqlite.Pool) -> None:
@@ -89,7 +93,19 @@ class Bot(commands.Bot):
     async def event_ready(self) -> None:
         LOGGER.info("Successfully logged in as: %s", self.bot_id)
         self.get_actual_chatters.start()
+
+    #async def event_stream_online(self) -> None:
+    #    self.get_actual_chatters.start()
+
+    async def event_stream_offline(self) -> None:
+        self.get_actual_chatters.stop()
     
+    async def close(self) -> None:
+        await self.clean_webserver()
+
+    async def clean_webserver(self):
+        result = call_js_method(command="clear")
+
     previous_chatters = set()
     
     @routines.routine(delta=datetime.timedelta(seconds=10))
@@ -113,6 +129,16 @@ class Bot(commands.Bot):
         
 
 def call_js_method(set_of_users, command):
+    if command == "clear":
+        url = 'http://127.0.0.1:5000/clear'
+        try:
+            response = requests.post(url, data=command)  # Отправляем команду в теле запроса
+            response.raise_for_status()
+            #return response.text #  Возвращаем True при успешном запросе
+        except requests.exceptions.RequestException as e:
+            print(f"Error during request: {response.status_code}, {response.text}")
+            return False
+        
     if command == "display":
         url = 'http://127.0.0.1:5000/display_text'
     elif command == "delete":
