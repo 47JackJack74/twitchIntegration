@@ -64,12 +64,12 @@
             // Обновляем позицию в зависимости от состояния движения
             if (moveState === 1) {
                 currentLeft += speed;
-                square.src = '/static/sprites/Right.gif'; // Движение вправо
+                square.src = '/static/sprites/Jabka_side_right.gif'; // Движение вправо
             } else if (moveState === -1) {
                 currentLeft -= speed;
-                square.src = '/static/sprites/Left.gif'; // Движение влево
+                square.src = '/static/sprites/Jabka_side_left.gif'; // Движение влево
             } else {
-                square.src = '/static/sprites/Stay2.gif'; // Стоит на месте
+                square.src = '/static/sprites/Jabka_idle.gif'; // Стоит на месте
             }
 
             // Ограничение movements внутри экрана
