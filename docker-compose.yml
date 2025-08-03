@@ -1,0 +1,21 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  twitchbot:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./tokens.db:/app/tokens.db
+      - ./bot:/app/bot
+      - ./app:/app/app
+    environment:
+      - FLASK_ENV=development
+    env_file:
+      - .env
+    # Для Windows: нужен хост для связи бота с вебом
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true

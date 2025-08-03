@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>WebSocket Example</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        /* Стили для гифок */
+        .square {
+            width: 100px;
+            height: 100px;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: left 0.8s linear;
+        }
+
+        /* Стили для текста */
+        .square-text {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 110px;
+            pointer-events: none;
+            transition: left 0.8s linear;
+
+            /* Оформление текста */
+            font-size: 12px;
+            color: white;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            display: inline-block;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="text-container"></div>
+    <div id="squares-container"></div>
+    <div id="random-number"></div>
+
+    <script>
+        const squaresContainer = document.getElementById('squares-container');
+        const socket = io();
+        let randomNumber = 0;
+
+        // Функция для создания элемента с гифкой
+        function createGifElement(src) {
+            const img = document.createElement('img');
+            img.src = src; // Устанавливаем путь к гифке
+            img.classList.add('square'); // Применяем класс .square для стилей
+            img.style.width = '100px'; // Устанавливаем размер изображения
+            img.style.height = '100px';
+            return img;
+        }
+
+        // Функция анимации гифки
+        function animateSquare(square, textElement, currentLeft, moveState) {
+            const speed = Math.random() * (100 - 30) + 30;
+
+            // Обновляем позицию в зависимости от состояния движения
+            if (moveState === 1) {
+                currentLeft += speed;
+                square.src = '/static/sprites/Jabka_side_right.gif'; // Движение вправо
+            } else if (moveState === -1) {
+                currentLeft -= speed;
+                square.src = '/static/sprites/Jabka_side_left.gif'; // Движение влево
+            } else {
+                square.src = '/static/sprites/Jabka_idle.gif'; // Стоит на месте
+            }
+
+            // Ограничение movements внутри экрана
+            currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
+            square.style.left = `calc(50% + ${currentLeft}px)`;
+            textElement.style.left = `calc(50% + ${currentLeft}px)`;
+
+            // Генерация нового состояния через случайный таймаут
+            const randomTimeout = Math.random() * (1000 - 500) + 500;
+            setTimeout(() => {
+                const newMoveState = chooseRandomState();
+                animateSquare(square, textElement, currentLeft, newMoveState);
+            }, randomTimeout);
+        }
+
+        // Функция выбора случайного состояния движения
+        function chooseRandomState() {
+            randomNumber = Math.random();
+            let moveState;
+            if (randomNumber < 0.7) {
+                moveState = 0; // Стоит на месте
+            } else if (randomNumber < 0.85) {
+                moveState = 1; // Движение вправо
+            } else {
+                moveState = -1; // Движение влево
+            }
+            return moveState;
+        }
+
+        // Функция для создания нового квадрата и текста
+        function createSquareAndText(text) {
+            const square = createGifElement('/static/sprites/Stay.gif'); // Начальное состояние "стойка"
+            squaresContainer.appendChild(square);
+
+            const textElement = document.createElement('div');
+            textElement.classList.add('square-text');
+            textElement.textContent = text;
+            squaresContainer.appendChild(textElement);
+
+            let currentLeft = 0;
+            const moveState = chooseRandomState();
+            animateSquare(square, textElement, currentLeft, moveState);
+        }
+
+        // Обработка сообщения о начале движения
+        socket.on('server_message', function (data) {
+            if (data.start_moving) {
+                createSquareAndText(data.text); // Создаем новый квадрат и текст
+            }
+        });
+
+        // Обработка сообщения об удалении
+        socket.on('delete_message', function (data) {
+            const textToDelete = data.text;
+            const squareElements = squaresContainer.querySelectorAll('.square-text');
+            squareElements.forEach(textElement => {
+                if (textElement.textContent == textToDelete) {
+                    const square = textElement.previousElementSibling;
+                    squaresContainer.removeChild(square);
+                    squaresContainer.removeChild(textElement);
+                }
+            });
+        });
+
+        // Обработка сообщения об очистке
+        socket.on('clear_message', function (data) {
+            console.log("Received clear_message event");  // Логирование
+            while (squaresContainer.firstChild) {
+                squaresContainer.removeChild(squaresContainer.firstChild);
+            }
+        });
+
+        // При загрузке страницы получаем текущее состояние squares
+        async function loadSquares() {
+            try {
+                const response = await fetch('/get_squares'); // Получаем данные с сервера
+                const texts = await response.json(); // Парсим JSON-ответ
+                texts.forEach(text => createSquareAndText(text)); // Создаем элементы для каждого текста
+            } catch (error) {
+                console.error("Ошибка при получении данных:", error);
+            }
+        }
+
+        // Вызываем функцию загрузки при загрузке страницы
+        window.onload = loadSquares;
+
+        // Логируем ошибки подключения
+        socket.on('connect_error', function (err) {
+            console.error("WebSocket connection error:", err);
+        });
+
+    </script>
+</body>
+
+</html>
