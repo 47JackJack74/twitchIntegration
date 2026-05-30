@@ -45,6 +45,9 @@ def login():
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     state_token = serializer.dumps({'role': role})
     
+    print(f"🔍 WEBHOOK_URL from env: {settings.WEBHOOK_URL}")
+    print(f"🔍 REDIRECT_URI: {REDIRECT_URI}")
+    
     auth_url = (
         f"https://id.twitch.tv/oauth2/authorize"
         f"?client_id={settings.CLIENT_ID}"
