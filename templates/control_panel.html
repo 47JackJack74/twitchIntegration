@@ -1,106 +1,184 @@
-<!-- templates/control_panel.html -->
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Панель управления Twitch Ботом</title>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Twitch Bot Panel</title>
     <style>
-      /* Стиль для переключателя */
-      .switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-      }
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 34px;
-      }
-      .slider:before {
-        position: absolute;
-        content: "";
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
-      }
-      input:checked + .slider {
-        background-color: #2196f3;
-      }
-      input:focus + .slider {
-        box-shadow: 0 0 1px #2196f3;
-      }
-      input:checked + .slider:before {
-        transform: translateX(26px);
-      }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+            color: #efeff1; 
+            padding: 40px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+        .card { 
+            background: #0f3460; 
+            padding: 30px; 
+            border-radius: 12px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        h1 { 
+            color: #9146ff; 
+            margin-top: 0;
+            text-align: center;
+        }
+        .user-info {
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .status-box { 
+            margin: 20px 0; 
+            padding: 15px; 
+            background: #1a1a2e; 
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        #bot-status {
+            font-weight: bold;
+        }
+        .btn { 
+            padding: 12px 30px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .btn-start { 
+            background: #00ad03; 
+            color: white; 
+        }
+        .btn-stop { 
+            background: #eb0400; 
+            color: white; 
+        }
+        .btn-logout {
+            background: #555;
+            color: white;
+        }
+        .hint {
+            color: #aaa;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🤖 Twitch Bot Panel</h1>
+        
+        {% if session.get('twitch_user') %}
+            <div class="user-info">
+                <p>👤 <strong>{{ session['twitch_user']['login'] }}</strong></p>
+                <p style="margin: 5px 0; color: #888;">ID: {{ session['twitch_user']['id'] }}</p>
+            </div>
+            
+            <div class="status-box">
+                <span id="bot-status">Загрузка статуса...</span>
+            </div>
+            
+            <div style="text-align: center;">
+                <button id="toggle-btn" class="btn btn-start" onclick="toggleBot()">
+                    ▶ Запустить Бота
+                </button>
+                <button class="btn btn-logout" onclick="window.location.href='/logout'">
+                    🚪 Выйти
+                </button>
+            </div>
+            
+            <p class="hint">💡 Бот будет работать в фоновом режиме</p>
+        {% else %}
+            <div style="text-align: center;">
+                <p>⚠️ Вы не авторизованы</p>
+                <button class="btn btn-start" onclick="window.location.href='/oauth/login'">
+                    🔐 Войти через Twitch
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
     <script>
-      // Функция для проверки состояния бота (без запуска!)
-      function checkBotStatus() {
-        fetch("/bot_status", { method: "GET" }) // ← GET, не POST!
-          .then((response) => response.json())
-          .then((data) => {
-            const toggleSwitch = document.getElementById("bot-toggle");
-            if (data.status === "running") {
-              toggleSwitch.checked = true; // Включаем переключатель
-            } else {
-              toggleSwitch.checked = false; // Выключаем
+        let isRunning = false;
+        
+        async function checkStatus() {
+            try {
+                const res = await fetch('/bot_status');
+                const data = await res.json();
+                
+                const statusEl = document.getElementById('bot-status');
+                const btn = document.getElementById('toggle-btn');
+                
+                if (!statusEl || !btn) {
+                    console.error('Elements not found');
+                    return;
+                }
+                
+                if (data.status === 'running') {
+                    statusEl.innerText = "🟢 РАБОТАЕТ";
+                    statusEl.style.color = "#00ad03";
+                    btn.innerText = "🛑 Остановить Бота";
+                    btn.className = "btn btn-stop";
+                    isRunning = true;
+                } else {
+                    statusEl.innerText = "🔴 ОСТАНОВЛЕН";
+                    statusEl.style.color = "#eb0400";
+                    btn.innerText = "▶ Запустить Бота";
+                    btn.className = "btn btn-start";
+                    isRunning = false;
+                }
+            } catch (e) { 
+                console.error("Error checking status:", e); 
             }
-          })
-          .catch((err) => console.error("Ошибка при проверке статуса:", err));
-      }
+        }
 
-      // Запуск при загрузке страницы
-      window.onload = checkBotStatus;
+        async function toggleBot() {
+            const action = isRunning ? 'stop_bot' : 'start_bot';
+            
+            console.log(`🔄 Sending ${action} request...`);
+            
+            const btn = document.getElementById('toggle-btn');
+            if (btn) btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/${action}`, { 
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await res.json();
+                console.log('📨 Response:', data);
+                
+                if (data.status === 'error') {
+                    alert('❌ ' + data.message);
+                } else {
+                    alert('✅ ' + data.message);
+                    await checkStatus();
+                }
+            } catch (err) {
+                console.error('❌ Error:', err);
+                alert('Failed to communicate with server');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
 
-      // Обработка переключения
-      document.addEventListener("DOMContentLoaded", () => {
-        const toggleSwitch = document.getElementById("bot-toggle");
-        toggleSwitch.addEventListener("change", function () {
-          let url, method;
-          if (this.checked) {
-            url = "/start_bot";
-            method = "POST";
-          } else {
-            url = "/stop_bot";
-            method = "POST";
-          }
-
-          // Отправляем команду
-          fetch(url, { method: method })
-            .then((response) => response.json())
-            .then((data) => console.log("Ответ сервера:", data))
-            .catch((err) => {
-              console.error("Ошибка при изменении статуса:", err);
-              // На случай ошибки — верни переключатель назад
-              toggleSwitch.checked = !toggleSwitch.checked;
-            });
-        });
-      });
+        // Запуск проверки при загрузке страницы
+        document.addEventListener('DOMContentLoaded', checkStatus);
     </script>
-  </head>
-  <body>
-    <h1>Панель управления Twitch Ботом</h1>
-    <label class="switch">
-      <input type="checkbox" id="bot-toggle" />
-      <span class="slider"></span>
-    </label>
-    <p>Переключатель: Вкл/Выкл</p>
-  </body>
+</body>
 </html>

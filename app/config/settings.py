@@ -9,6 +9,12 @@ HOST = os.getenv("FLASK_HOST", "0.0.0.0")
 PORT = int(os.getenv("FLASK_PORT", 5000))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://127.0.0.1:5000")
 
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("SECRET")  # Или CLIENT_SECRET, смотря как в .env
+BOT_ID = os.getenv("BOT_ID")
+OWNER_ID = os.getenv("OWNER_ID")
+PREFIX = os.getenv("PREFIX", "!")
+
 # Аутентификация
 USERS = {
     "Jack": "scrypt:32768:8:1$W0fANH0jppjpLItJ$e2d7b32101d9aaf2ab9c372c62195b36e3d64b49fd1369eb7b6f226d13c394224f9d427eec23904e3e2c94c246e53a71736d9178c78187bb67203887f3a1da5b"

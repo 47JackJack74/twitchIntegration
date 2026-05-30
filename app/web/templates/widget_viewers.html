@@ -14,6 +14,7 @@
             left: 50%;
             transform: translateX(-50%);
             transition: left 0.8s linear;
+            overflow: hidden; /* Добавлено для предотвращения выхода за границы */
         }
 
         /* Стили для текста */
@@ -33,6 +34,21 @@
             border-radius: 5px;
             display: inline-block;
             text-align: center;
+            max-width: calc(100vw - 20px); /* Ограничиваем максимальную ширину текста */
+            word-wrap: break-word; /* Переносим слова при необходимости */
+            box-sizing: border-box; /* Включаем padding в расчёт ширины */
+            overflow: hidden; /* Добавлено для предотвращения выхода за границы */
+        }
+
+        /* Добавлен контейнер для ограничения области видимости */
+        #squares-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -73,7 +89,9 @@
             }
 
             // Ограничение movements внутри экрана
-            currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
+            // Учитываем ширину изображения (100px) и половину этой ширины для корректного позиционирования
+            const halfImageWidth = 50; // половина ширины изображения
+            currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - halfImageWidth)), window.innerWidth / 2 - halfImageWidth);
             square.style.left = `calc(50% + ${currentLeft}px)`;
             textElement.style.left = `calc(50% + ${currentLeft}px)`;
 

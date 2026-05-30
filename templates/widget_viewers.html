@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>WebSocket Example</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!-- ✅ Обновлённая версия + загрузка с правильным атрибутом -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
-        /* Стили для гифок */
         .square {
             width: 100px;
             height: 100px;
@@ -15,8 +14,6 @@
             transform: translateX(-50%);
             transition: left 0.8s linear;
         }
-
-        /* Стили для текста */
         .square-text {
             position: absolute;
             left: 50%;
@@ -24,8 +21,6 @@
             bottom: 110px;
             pointer-events: none;
             transition: left 0.8s linear;
-
-            /* Оформление текста */
             font-size: 12px;
             color: white;
             padding: 5px 10px;
@@ -36,132 +31,136 @@
         }
     </style>
 </head>
-
 <body>
     <div id="text-container"></div>
     <div id="squares-container"></div>
-    <div id="random-number"></div>
 
+    <!-- ✅ Скрипт выполняется ТОЛЬКО после загрузки DOM и socket.io -->
     <script>
-        const squaresContainer = document.getElementById('squares-container');
-        const socket = io();
-        let randomNumber = 0;
-
-        // Функция для создания элемента с гифкой
-        function createGifElement(src) {
-            const img = document.createElement('img');
-            img.src = src; // Устанавливаем путь к гифке
-            img.classList.add('square'); // Применяем класс .square для стилей
-            img.style.width = '100px'; // Устанавливаем размер изображения
-            img.style.height = '100px';
-            return img;
-        }
-
-        // Функция анимации гифки
-        function animateSquare(square, textElement, currentLeft, moveState) {
-            const speed = Math.random() * (100 - 30) + 30;
-
-            // Обновляем позицию в зависимости от состояния движения
-            if (moveState === 1) {
-                currentLeft += speed;
-                square.src = '/static/sprites/Jabka_side_right.gif'; // Движение вправо
-            } else if (moveState === -1) {
-                currentLeft -= speed;
-                square.src = '/static/sprites/Jabka_side_left.gif'; // Движение влево
-            } else {
-                square.src = '/static/sprites/Jabka_idle.gif'; // Стоит на месте
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверка, что библиотека загрузилась
+            if (typeof io === 'undefined') {
+                console.error('❌ Socket.IO library not loaded! Check CDN or network.');
+                document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px">⚠️ Ошибка загрузки Socket.IO</h1>';
+                return;
             }
 
-            // Ограничение movements внутри экрана
-            currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
-            square.style.left = `calc(50% + ${currentLeft}px)`;
-            textElement.style.left = `calc(50% + ${currentLeft}px)`;
+            // ✅ Инициализация с явным указанием сервера (надёжнее)
+            const socket = io(window.location.origin);
+            
+            const squaresContainer = document.getElementById('squares-container');
+            let randomNumber = 0;
 
-            // Генерация нового состояния через случайный таймаут
-            const randomTimeout = Math.random() * (1000 - 500) + 500;
-            setTimeout(() => {
-                const newMoveState = chooseRandomState();
-                animateSquare(square, textElement, currentLeft, newMoveState);
-            }, randomTimeout);
-        }
+            // 🔌 Логирование подключения
+            socket.on('connect', () => {
+                console.log('✅ WebSocket connected:', socket.id);
+            });
+            
+            socket.on('connect_error', (err) => {
+                console.error('❌ WebSocket connection error:', err.message);
+            });
 
-        // Функция выбора случайного состояния движения
-        function chooseRandomState() {
-            randomNumber = Math.random();
-            let moveState;
-            if (randomNumber < 0.7) {
-                moveState = 0; // Стоит на месте
-            } else if (randomNumber < 0.85) {
-                moveState = 1; // Движение вправо
-            } else {
-                moveState = -1; // Движение влево
+            // Функция для создания элемента с гифкой
+            function createGifElement(src) {
+                const img = document.createElement('img');
+                img.src = src;
+                img.classList.add('square');
+                img.style.width = '100px';
+                img.style.height = '100px';
+                return img;
             }
-            return moveState;
-        }
 
-        // Функция для создания нового квадрата и текста
-        function createSquareAndText(text) {
-            const square = createGifElement('/static/sprites/Stay.gif'); // Начальное состояние "стойка"
-            squaresContainer.appendChild(square);
+            // Функция анимации гифки
+            function animateSquare(square, textElement, currentLeft, moveState) {
+                const speed = Math.random() * (100 - 30) + 30;
 
-            const textElement = document.createElement('div');
-            textElement.classList.add('square-text');
-            textElement.textContent = text;
-            squaresContainer.appendChild(textElement);
+                if (moveState === 1) {
+                    currentLeft += speed;
+                    square.src = '/static/sprites/Jabka_side_right.gif';
+                } else if (moveState === -1) {
+                    currentLeft -= speed;
+                    square.src = '/static/sprites/Jabka_side_left.gif';
+                } else {
+                    square.src = '/static/sprites/Jabka_idle.gif';
+                }
 
-            let currentLeft = 0;
-            const moveState = chooseRandomState();
-            animateSquare(square, textElement, currentLeft, moveState);
-        }
+                currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
+                square.style.left = `calc(50% + ${currentLeft}px)`;
+                textElement.style.left = `calc(50% + ${currentLeft}px)`;
 
-        // Обработка сообщения о начале движения
-        socket.on('server_message', function (data) {
-            if (data.start_moving) {
-                createSquareAndText(data.text); // Создаем новый квадрат и текст
+                const randomTimeout = Math.random() * (1000 - 500) + 500;
+                setTimeout(() => {
+                    const newMoveState = chooseRandomState();
+                    animateSquare(square, textElement, currentLeft, newMoveState);
+                }, randomTimeout);
             }
-        });
 
-        // Обработка сообщения об удалении
-        socket.on('delete_message', function (data) {
-            const textToDelete = data.text;
-            const squareElements = squaresContainer.querySelectorAll('.square-text');
-            squareElements.forEach(textElement => {
-                if (textElement.textContent == textToDelete) {
-                    const square = textElement.previousElementSibling;
-                    squaresContainer.removeChild(square);
-                    squaresContainer.removeChild(textElement);
+            function chooseRandomState() {
+                randomNumber = Math.random();
+                if (randomNumber < 0.7) return 0;
+                if (randomNumber < 0.85) return 1;
+                return -1;
+            }
+
+            function createSquareAndText(text) {
+                // Проверяем, нет ли уже такого зрителя
+                if (document.getElementById(`viewer-${text}`)) return;
+                
+                const square = createGifElement('/static/sprites/Stay.gif');
+                square.id = `viewer-img-${text}`;
+                squaresContainer.appendChild(square);
+
+                const textElement = document.createElement('div');
+                textElement.id = `viewer-${text}`;  // ✅ Уникальный ID для удаления
+                textElement.classList.add('square-text');
+                textElement.textContent = text;
+                squaresContainer.appendChild(textElement);
+
+                let currentLeft = 0;
+                const moveState = chooseRandomState();
+                animateSquare(square, textElement, currentLeft, moveState);
+            }
+
+            // 📨 Обработчики событий
+            socket.on('server_message', function (data) {
+                console.log('📨 server_message:', data);
+                if (data.start_moving && data.text) {
+                    createSquareAndText(data.text);
                 }
             });
-        });
 
-        // Обработка сообщения об очистке
-        socket.on('clear_message', function (data) {
-            console.log("Received clear_message event");  // Логирование
-            while (squaresContainer.firstChild) {
-                squaresContainer.removeChild(squaresContainer.firstChild);
+            socket.on('delete_message', function (data) {
+                console.log('🗑 delete_message:', data);
+                const textToDelete = data.text;
+                const textElement = document.getElementById(`viewer-${textToDelete}`);
+                if (textElement) {
+                    const square = document.getElementById(`viewer-img-${textToDelete}`);
+                    if (square) square.remove();
+                    textElement.remove();
+                    console.log(`✅ Removed viewer: ${textToDelete}`);
+                }
+            });
+
+            socket.on('clear_message', function () {
+                console.log('🧹 clear_message received');
+                squaresContainer.innerHTML = '';
+            });
+
+            // 🔄 Загрузка начального состояния
+            async function loadSquares() {
+                try {
+                    const response = await fetch('/get_squares');
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const texts = await response.json();
+                    console.log('📦 Loaded initial squares:', texts);
+                    texts.forEach(text => createSquareAndText(text));
+                } catch (error) {
+                    console.error("❌ Error loading squares:", error);
+                }
             }
+
+            loadSquares();
         });
-
-        // При загрузке страницы получаем текущее состояние squares
-        async function loadSquares() {
-            try {
-                const response = await fetch('/get_squares'); // Получаем данные с сервера
-                const texts = await response.json(); // Парсим JSON-ответ
-                texts.forEach(text => createSquareAndText(text)); // Создаем элементы для каждого текста
-            } catch (error) {
-                console.error("Ошибка при получении данных:", error);
-            }
-        }
-
-        // Вызываем функцию загрузки при загрузке страницы
-        window.onload = loadSquares;
-
-        // Логируем ошибки подключения
-        socket.on('connect_error', function (err) {
-            console.error("WebSocket connection error:", err);
-        });
-
     </script>
 </body>
-
 </html>
