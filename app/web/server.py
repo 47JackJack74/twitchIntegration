@@ -46,22 +46,28 @@ def create_app():
 
 def run_server():
     app = create_app()
-    
-    # Инициализируем SocketIO ПОСЛЕ создания app и регистрации всех роутов
-    socketio.init_app(
+    socketio.init_app(app, cors_allowed_origins="*")
+
+    use_ssl = os.getenv("USE_SSL", "false").lower() == "true"
+    ssl_cert = os.getenv("SSL_CERT_PATH")
+    ssl_key = os.getenv("SSL_KEY_PATH")
+
+    ssl_context = None
+    if use_ssl and ssl_cert and ssl_key:
+        if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+            ssl_context = (ssl_cert, ssl_key)
+            print(f"✅ SSL loaded: {ssl_cert}")
+        else:
+            print(f"⚠️ SSL files NOT found at {ssl_cert} / {ssl_key}. Starting HTTP.")
+
+    socketio.run(
         app,
-        cors_allowed_origins="*",           # Разрешаем все источники
-        async_mode='threading',             # Используем threading (проще для начала)
-        ping_timeout=60,                    # Увеличиваем таймаут
-        ping_interval=25,                   # Интервал ping
-        logger=False,                       # Отключаем логи Socket.IO (шумные)
-        engineio_logger=False,              # Отключаем логи Engine.IO
-        always_connect=True,                # Разрешаем подключения
+        host="0.0.0.0",
+        port=int(os.getenv("FLASK_PORT", 5000)),
+        ssl_context=ssl_context,
+        debug=False,
+        allow_unsafe_werkzeug=True
     )
-    
-    # SSL сертификаты от Let's Encrypt
-    ssl_cert = '/etc/letsencrypt/live/twitchbot.duckdns.org/fullchain.pem'
-    ssl_key = '/etc/letsencrypt/live/twitchbot.duckdns.org/privkey.pem'
     
     # Запуск сервера
     """
@@ -73,11 +79,3 @@ def run_server():
         allow_unsafe_werkzeug=True
     )
     """
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        ssl_context=(ssl_cert, ssl_key),  # ← Включаем HTTPS
-        debug=False,  # ← Выключи debug в продакшене!
-        allow_unsafe_werkzeug=True
-    )
