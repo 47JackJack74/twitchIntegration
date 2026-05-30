@@ -1,6 +1,7 @@
 # app/web/server.py
 import os
 from flask import Flask
+import sqlite3
 from app.web.sockets import socketio
 from app.web.routes.control_panel import setup_routes as setup_control_routes
 from app.web.routes.widgets import setup_routes as setup_widget_routes
@@ -25,7 +26,21 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = False  # True для HTTPS в продакшене
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
+    
+    # 🔽 ВСТАВИТЬ ЭТОТ БЛОК ПЕРЕД return app
+    db_path = os.getenv("DATABASE_PATH", "/app/db/tokens.db")
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tokens (
+                user_id TEXT PRIMARY KEY,
+                token TEXT NOT NULL,
+                refresh TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        print("✅ DB table 'tokens' ready")
+    
     # 🔹 Регистрируем ВСЕ роуты и Blueprint'ы
     setup_control_routes(app)
     setup_widget_routes(app)
