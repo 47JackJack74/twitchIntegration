@@ -8,8 +8,7 @@ from database.setup import load_tokens, setup_database
 from core.subscriptions import get_subscriptions  # ← Импортируем функцию
 from core.config import OWNER_ID, BOT_ID
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOKENS_DB = os.path.join(BASE_DIR, "tokens.db")
+TOKENS_DB = os.getenv("DATABASE_PATH", "/app/db/tokens.db")
 
 logging.basicConfig(level=logging.INFO)
 
