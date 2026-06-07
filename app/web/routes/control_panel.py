@@ -10,7 +10,7 @@ def setup_routes(app):
     @app.route('/')
     def index():
         if 'twitch_user' in session:
-            return redirect(url_for('control_panel.panel'))
+            return redirect(url_for('control_panel'))
         return redirect(url_for('oauth.login'))  # Ссылка на роут в oauth.py
 
     # 🔹 2. Панель управления (теперь без @auth.login_required)
