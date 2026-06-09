@@ -23,7 +23,10 @@ REDIRECT_URI = f"{settings.WEBHOOK_URL}/oauth/callback"
 
 # 🗄 Путь к базе данных
 DB_PATH = os.getenv("DATABASE_PATH", "/app/db/tokens.db")
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+print (DB_PATH)
+db_dir = os.path.dirname(DB_PATH)
+if db_dir:  # Проверяем, что путь не пустой
+    os.makedirs(db_dir, exist_ok=True)
 
 
 @bp.route('/login')
