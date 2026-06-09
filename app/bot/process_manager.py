@@ -48,11 +48,13 @@ def start_bot():
             text=True,
             creationflags=creationflags
         )
+        """
         def stream_output():
             for line in _bot_process.stdout:
                 print(f"[BOT] {line}", end='', flush=True)
+                
         
-        threading.Thread(target=stream_output, daemon=True).start()
+        threading.Thread(target=stream_output, daemon=True).start()"""
         
         print(f"✅ Bot started with PID: {_bot_process.pid}")
         return True, "Bot started"
