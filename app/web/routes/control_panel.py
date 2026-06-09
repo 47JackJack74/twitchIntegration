@@ -21,11 +21,21 @@ def setup_routes(app):
         if not user:
             return redirect(url_for('oauth.login'))
         
-        # Передаём данные пользователя и статус бота в шаблон
+        # 🔥 Получаем widget_token из сессии
+        widget_token = user.get('widget_token', '')
+        
+        # 🔥 Формируем полную ссылку на виджет
+        if widget_token:
+            widget_url = f"{request.host_url.rstrip('/')}/widget_viewers?token={widget_token}"
+        else:
+            widget_url = None
+        
+        # Передаём данные пользователя, статус бота и ссылку на виджет в шаблон
         return render_template(
             'control_panel.html', 
-            user=user,  # {'id': '...', 'login': '...'}
-            bot_status="running" if is_bot_running() else "stopped"
+            user=user,  # {'id': '...', 'login': '...', 'widget_token': '...'}
+            bot_status="running" if is_bot_running() else "stopped",
+            widget_url=widget_url  # 🔥 Добавляем ссылку на виджет
         )
 
     # 🔹 3. Запуск бота (доступен только авторизованным)

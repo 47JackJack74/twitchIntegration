@@ -1,166 +1,191 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>WebSocket Example</title>
     <!-- ✅ Обновлённая версия + загрузка с правильным атрибутом -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
-        .square {
-            width: 100px;
-            height: 100px;
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            transition: left 0.8s linear;
-        }
-        .square-text {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 110px;
-            pointer-events: none;
-            transition: left 0.8s linear;
-            font-size: 12px;
-            color: white;
-            padding: 5px 10px;
-            background-color: rgba(0, 0, 0, 0.4);
-            border-radius: 5px;
-            display: inline-block;
-            text-align: center;
-        }
+      .square {
+        width: 100px;
+        height: 100px;
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        transition: left 0.8s linear;
+      }
+      .square-text {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 110px;
+        pointer-events: none;
+        transition: left 0.8s linear;
+        font-size: 12px;
+        color: white;
+        padding: 5px 10px;
+        background-color: rgba(0, 0, 0, 0.4);
+        border-radius: 5px;
+        display: inline-block;
+        text-align: center;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="text-container"></div>
     <div id="squares-container"></div>
 
     <!-- ✅ Скрипт выполняется ТОЛЬКО после загрузки DOM и socket.io -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Проверка, что библиотека загрузилась
-            if (typeof io === 'undefined') {
-                console.error('❌ Socket.IO library not loaded! Check CDN or network.');
-                document.body.innerHTML = '<h1 style="color:red;text-align:center;margin-top:50px">⚠️ Ошибка загрузки Socket.IO</h1>';
-                return;
-            }
+      document.addEventListener("DOMContentLoaded", function () {
+        // Проверка, что библиотека загрузилась
+        if (typeof io === "undefined") {
+          console.error(
+            "❌ Socket.IO library not loaded! Check CDN or network.",
+          );
+          document.body.innerHTML =
+            '<h1 style="color:red;text-align:center;margin-top:50px">⚠️ Ошибка загрузки Socket.IO</h1>';
+          return;
+        }
 
-            // ✅ Инициализация с явным указанием сервера (надёжнее)
-            const socket = io(window.location.origin);
-            
-            const squaresContainer = document.getElementById('squares-container');
-            let randomNumber = 0;
+        // 🔥 Получаем токен из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
 
-            // 🔌 Логирование подключения
-            socket.on('connect', () => {
-                console.log('✅ WebSocket connected:', socket.id);
-            });
-            
-            socket.on('connect_error', (err) => {
-                console.error('❌ WebSocket connection error:', err.message);
-            });
+        if (!token) {
+          console.error("❌ Token not found in URL!");
+          document.body.innerHTML =
+            '<h1 style="color:red;text-align:center;margin-top:50px">⚠️ Ошибка: токен не найден в URL</h1>';
+          return;
+        }
 
-            // Функция для создания элемента с гифкой
-            function createGifElement(src) {
-                const img = document.createElement('img');
-                img.src = src;
-                img.classList.add('square');
-                img.style.width = '100px';
-                img.style.height = '100px';
-                return img;
-            }
+        console.log("✅ Token found:", token.substring(0, 20) + "...");
 
-            // Функция анимации гифки
-            function animateSquare(square, textElement, currentLeft, moveState) {
-                const speed = Math.random() * (100 - 30) + 30;
-
-                if (moveState === 1) {
-                    currentLeft += speed;
-                    square.src = '/static/sprites/Jabka_side_right.gif';
-                } else if (moveState === -1) {
-                    currentLeft -= speed;
-                    square.src = '/static/sprites/Jabka_side_left.gif';
-                } else {
-                    square.src = '/static/sprites/Jabka_idle.gif';
-                }
-
-                currentLeft = Math.min(Math.max(currentLeft, -(window.innerWidth / 2 - 25)), window.innerWidth / 2 - 25);
-                square.style.left = `calc(50% + ${currentLeft}px)`;
-                textElement.style.left = `calc(50% + ${currentLeft}px)`;
-
-                const randomTimeout = Math.random() * (1000 - 500) + 500;
-                setTimeout(() => {
-                    const newMoveState = chooseRandomState();
-                    animateSquare(square, textElement, currentLeft, newMoveState);
-                }, randomTimeout);
-            }
-
-            function chooseRandomState() {
-                randomNumber = Math.random();
-                if (randomNumber < 0.7) return 0;
-                if (randomNumber < 0.85) return 1;
-                return -1;
-            }
-
-            function createSquareAndText(text) {
-                // Проверяем, нет ли уже такого зрителя
-                if (document.getElementById(`viewer-${text}`)) return;
-                
-                const square = createGifElement('/static/sprites/Stay.gif');
-                square.id = `viewer-img-${text}`;
-                squaresContainer.appendChild(square);
-
-                const textElement = document.createElement('div');
-                textElement.id = `viewer-${text}`;  // ✅ Уникальный ID для удаления
-                textElement.classList.add('square-text');
-                textElement.textContent = text;
-                squaresContainer.appendChild(textElement);
-
-                let currentLeft = 0;
-                const moveState = chooseRandomState();
-                animateSquare(square, textElement, currentLeft, moveState);
-            }
-
-            // 📨 Обработчики событий
-            socket.on('server_message', function (data) {
-                console.log('📨 server_message:', data);
-                if (data.start_moving && data.text) {
-                    createSquareAndText(data.text);
-                }
-            });
-
-            socket.on('delete_message', function (data) {
-                console.log('🗑 delete_message:', data);
-                const textToDelete = data.text;
-                const textElement = document.getElementById(`viewer-${textToDelete}`);
-                if (textElement) {
-                    const square = document.getElementById(`viewer-img-${textToDelete}`);
-                    if (square) square.remove();
-                    textElement.remove();
-                    console.log(`✅ Removed viewer: ${textToDelete}`);
-                }
-            });
-
-            socket.on('clear_message', function () {
-                console.log('🧹 clear_message received');
-                squaresContainer.innerHTML = '';
-            });
-
-            // 🔄 Загрузка начального состояния
-            async function loadSquares() {
-                try {
-                    const response = await fetch('/get_squares');
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const texts = await response.json();
-                    console.log('📦 Loaded initial squares:', texts);
-                    texts.forEach(text => createSquareAndText(text));
-                } catch (error) {
-                    console.error("❌ Error loading squares:", error);
-                }
-            }
-
-            loadSquares();
+        // ✅ Инициализация с передачей токена в query параметрах
+        const socket = io(window.location.origin, {
+          query: {
+            token: token,
+          },
         });
+
+        const squaresContainer = document.getElementById("squares-container");
+        let randomNumber = 0;
+
+        // 🔌 Логирование подключения
+        socket.on("connect", () => {
+          console.log("✅ WebSocket connected:", socket.id);
+        });
+
+        socket.on("connect_error", (err) => {
+          console.error("❌ WebSocket connection error:", err.message);
+        });
+
+        // Функция для создания элемента с гифкой
+        function createGifElement(src) {
+          const img = document.createElement("img");
+          img.src = src;
+          img.classList.add("square");
+          img.style.width = "100px";
+          img.style.height = "100px";
+          return img;
+        }
+
+        // Функция анимации гифки
+        function animateSquare(square, textElement, currentLeft, moveState) {
+          const speed = Math.random() * (100 - 30) + 30;
+
+          if (moveState === 1) {
+            currentLeft += speed;
+            square.src = "/static/sprites/Jabka_side_right.gif";
+          } else if (moveState === -1) {
+            currentLeft -= speed;
+            square.src = "/static/sprites/Jabka_side_left.gif";
+          } else {
+            square.src = "/static/sprites/Jabka_idle.gif";
+          }
+
+          currentLeft = Math.min(
+            Math.max(currentLeft, -(window.innerWidth / 2 - 25)),
+            window.innerWidth / 2 - 25,
+          );
+          square.style.left = `calc(50% + ${currentLeft}px)`;
+          textElement.style.left = `calc(50% + ${currentLeft}px)`;
+
+          const randomTimeout = Math.random() * (1000 - 500) + 500;
+          setTimeout(() => {
+            const newMoveState = chooseRandomState();
+            animateSquare(square, textElement, currentLeft, newMoveState);
+          }, randomTimeout);
+        }
+
+        function chooseRandomState() {
+          randomNumber = Math.random();
+          if (randomNumber < 0.7) return 0;
+          if (randomNumber < 0.85) return 1;
+          return -1;
+        }
+
+        function createSquareAndText(text) {
+          // Проверяем, нет ли уже такого зрителя
+          if (document.getElementById(`viewer-${text}`)) return;
+
+          const square = createGifElement("/static/sprites/Stay.gif");
+          square.id = `viewer-img-${text}`;
+          squaresContainer.appendChild(square);
+
+          const textElement = document.createElement("div");
+          textElement.id = `viewer-${text}`; // ✅ Уникальный ID для удаления
+          textElement.classList.add("square-text");
+          textElement.textContent = text;
+          squaresContainer.appendChild(textElement);
+
+          let currentLeft = 0;
+          const moveState = chooseRandomState();
+          animateSquare(square, textElement, currentLeft, moveState);
+        }
+
+        // 📨 Обработчики событий
+        socket.on("server_message", function (data) {
+          console.log("📨 server_message:", data);
+          if (data.start_moving && data.text) {
+            createSquareAndText(data.text);
+          }
+        });
+
+        socket.on("delete_message", function (data) {
+          console.log("🗑 delete_message:", data);
+          const textToDelete = data.text;
+          const textElement = document.getElementById(`viewer-${textToDelete}`);
+          if (textElement) {
+            const square = document.getElementById(
+              `viewer-img-${textToDelete}`,
+            );
+            if (square) square.remove();
+            textElement.remove();
+            console.log(`✅ Removed viewer: ${textToDelete}`);
+          }
+        });
+
+        socket.on("clear_message", function () {
+          console.log("🧹 clear_message received");
+          squaresContainer.innerHTML = "";
+        });
+
+        // 🔄 Загрузка начального состояния
+        async function loadSquares() {
+          try {
+            const response = await fetch("/get_squares");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const texts = await response.json();
+            console.log("📦 Loaded initial squares:", texts);
+            texts.forEach((text) => createSquareAndText(text));
+          } catch (error) {
+            console.error("❌ Error loading squares:", error);
+          }
+        }
+
+        loadSquares();
+      });
     </script>
-</body>
+  </body>
 </html>

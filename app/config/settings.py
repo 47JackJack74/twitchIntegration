@@ -1,13 +1,10 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "super-secret-key")
 BOT_SCRIPT = os.getenv("BOT_SCRIPT", "./bot/twitch_bot.py")
 HOST = os.getenv("FLASK_HOST", "0.0.0.0")
 PORT = int(os.getenv("FLASK_PORT", 5000))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://localhostt:5000")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://localhost:5000")
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("SECRET")  # Или CLIENT_SECRET, смотря как в .env

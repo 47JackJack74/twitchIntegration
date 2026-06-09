@@ -4,6 +4,7 @@ import sys
 import os
 import psutil
 from app.config import settings
+import threading
 
 _bot_process = None
 
@@ -47,6 +48,13 @@ def start_bot():
             text=True,
             creationflags=creationflags
         )
+        def stream_output():
+            for line in _bot_process.stdout:
+                print(f"[BOT] {line}", end='', flush=True)
+        
+        threading.Thread(target=stream_output, daemon=True).start()
+        
+        print(f"✅ Bot started with PID: {_bot_process.pid}")
         return True, "Bot started"
     except Exception as e:
         return False, f"Failed to start bot: {e}"

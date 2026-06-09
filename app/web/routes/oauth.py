@@ -5,6 +5,7 @@ import sqlite3
 from flask import Blueprint, request, redirect, session, jsonify, current_app
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from app.config import settings
+import secrets
 
 bp = Blueprint('oauth', __name__, url_prefix='/oauth')
 
@@ -130,23 +131,50 @@ def callback():
     # 💾 Сохраняем в tokens.db
     try:
         with sqlite3.connect(DB_PATH) as conn:
+            # Проверяем, есть ли уже widget_token для этого пользователя
+            existing = conn.execute(
+                "SELECT widget_token FROM tokens WHERE user_id = ?", 
+                (user_id,)
+            ).fetchone()
+            
+            # Если токена нет — генерируем новый. Если есть — сохраняем старый
+            if existing and existing[0]:
+                widget_token = existing[0]
+                print(f"ℹ️ Используем существующий widget_token: {widget_token[:20]}...")
+            else:
+                widget_token = secrets.token_urlsafe(32)
+                print(f"✅ Сгенерирован новый widget_token: {widget_token[:20]}...")
+            
             conn.execute("""
-                INSERT INTO tokens (user_id, token, refresh)
-                VALUES (?, ?, ?)
+                INSERT INTO tokens (user_id, token, refresh, widget_token)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                     token = excluded.token,
-                    refresh = excluded.refresh
-            """, (user_id, access_token, refresh_token))
+                    refresh = excluded.refresh,
+                    widget_token = COALESCE(excluded.widget_token, tokens.widget_token)
+            """, (user_id, access_token, refresh_token, widget_token))
             conn.commit()
+            
+            # 🔍 ПРОВЕРКА: читаем из БД, что сохранилось
+            saved = conn.execute(
+                "SELECT widget_token FROM tokens WHERE user_id = ?", 
+                (user_id,)
+            ).fetchone()
+            print(f"💾 В БД сохранён widget_token: {saved[0][:20] if saved and saved[0] else 'None'}...")
+            
     except sqlite3.Error as e:
+        print(f"❌ Database error: {e}")
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
     #  Сохраняем в сессию только для UI (не влияет на OAuth)
     session['twitch_user'] = {
         'id': user_id, 
         'login': login,
-        'role': role
+        'role': role,
+        'widget_token': widget_token  # 🔥 Добавляем токен виджета
     }
+    
+    print(f"📦 В сессии widget_token: {session['twitch_user'].get('widget_token', 'None')[:20] if session['twitch_user'].get('widget_token') else 'None'}...")
     
     return redirect('/control_panel')
 

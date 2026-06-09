@@ -1,21 +1,26 @@
-# docker-compose.yml
-version: '3.8'
-
 services:
   twitchbot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twitchbot
+    restart: unless-stopped
     ports:
       - "5000:5000"
-    volumes:
-      - ./tokens.db:/app/tokens.db
-      - ./bot:/app/bot
-      - ./app:/app/app
-    environment:
-      - FLASK_ENV=development
+      - "4343:4343"
     env_file:
       - .env
-    # Для Windows: нужен хост для связи бота с вебом
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    stdin_open: true
-    tty: true
+    volumes:
+      - .:/app
+      - ./tokens.db:/app/tokens.db
+      - /etc/letsencrypt/live/jackjackbot.duckdns.org/fullchain.pem:/app/ssl/fullchain.pem:ro
+      - /etc/letsencrypt/live/jackjackbot.duckdns.org/privkey.pem:/app/ssl/privkey.pem:ro
+    working_dir: /app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, ssl; ctx = ssl._create_unverified_context(); urllib.request.urlopen('https://localhost:5000/', context=ctx, timeout=5)"]
+      interval: 60s

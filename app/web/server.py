@@ -35,7 +35,8 @@ def create_app():
             CREATE TABLE IF NOT EXISTS tokens (
                 user_id TEXT PRIMARY KEY,
                 token TEXT NOT NULL,
-                refresh TEXT NOT NULL
+                refresh TEXT NOT NULL,
+                widget_token TEXT UNIQUE  --  НОВОЕ ПОЛЕ
             )
         """)
         conn.commit()
@@ -57,32 +58,20 @@ def create_app():
     def server_error(e):
         return "Внутренняя ошибка сервера", 500
 
+    socketio.init_app(app, async_mode='threading', cors_allowed_origins="*")
+
     return app
 
 def run_server():
     app = create_app()
-    socketio.init_app(app, cors_allowed_origins="*")
-
-    use_ssl = os.getenv("USE_SSL", "false").lower() == "true"
-    ssl_cert = os.getenv("SSL_CERT_PATH")
-    ssl_key = os.getenv("SSL_KEY_PATH")
-
-    ssl_context = None
-    if use_ssl and ssl_cert and ssl_key:
-        if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
-            ssl_context = (ssl_cert, ssl_key)
-            print(f"✅ SSL loaded: {ssl_cert}")
-        else:
-            print(f"⚠️ SSL files NOT found at {ssl_cert} / {ssl_key}. Starting HTTP.")
-
-    socketio.run(
-        app,
-        host="0.0.0.0",
-        port=int(os.getenv("FLASK_PORT", 5000)),
-        ssl_context=ssl_context,
-        debug=False,
-        allow_unsafe_werkzeug=True
-    )
+    
+    port = int(os.getenv("FLASK_PORT", 5000))
+    host = os.getenv("FLASK_HOST", "0.0.0.0")
+    
+    print(f" Starting waitress on {host}:{port}")
+    
+    from waitress import serve
+    serve(app, host=host, port=port, threads=8)
     
     # Запуск сервера
     """

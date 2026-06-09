@@ -1,184 +1,582 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🤖 Twitch Bot Panel</title>
     <style>
-        body { 
-            font-family: system-ui, -apple-system, sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-            color: #efeff1; 
-            padding: 40px; 
-            margin: 0;
-            min-height: 100vh;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        color: #efeff1;
+        padding: 20px;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* Анимированный фон */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+          radial-gradient(circle at 20% 50%, rgba(145, 70, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(0, 173, 3, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 40% 20%, rgba(255, 0, 128, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Заголовок */
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+        animation: fadeInDown 0.6s ease-out;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        background: linear-gradient(135deg, #9146ff 0%, #ff6b9d 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+
+      .header p {
+        color: #888;
+        font-size: 1.1em;
+      }
+
+      /* Карточки */
+      .card {
+        background: rgba(15, 52, 96, 0.6);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: fadeInUp 0.6s ease-out;
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Информация о пользователе */
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background: rgba(26, 26, 46, 0.8);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+      }
+
+      .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #9146ff 0%, #ff6b9d 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em;
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .user-details {
+        flex: 1;
+      }
+
+      .user-details h3 {
+        font-size: 1.3em;
+        margin-bottom: 5px;
+        color: #fff;
+      }
+
+      .user-details p {
+        color: #888;
+        font-size: 0.9em;
+      }
+
+      /* Статус бота */
+      .status-section {
+        text-align: center;
+        padding: 30px;
+      }
+
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px 30px;
+        background: rgba(26, 26, 46, 0.8);
+        border-radius: 50px;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.running {
+        background: #00ad03;
+        box-shadow: 0 0 20px #00ad03;
+      }
+
+      .status-dot.stopped {
+        background: #eb0400;
+        box-shadow: 0 0 20px #eb0400;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* Кнопки */
+      .button-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 14px 35px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1em;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+
+      .btn:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .btn-start {
+        background: linear-gradient(135deg, #00ad03 0%, #00d107 100%);
+        color: white;
+      }
+
+      .btn-stop {
+        background: linear-gradient(135deg, #eb0400 0%, #ff4444 100%);
+        color: white;
+      }
+
+      .btn-logout {
+        background: linear-gradient(135deg, #555 0%, #777 100%);
+        color: white;
+      }
+
+      /* Секция виджета */
+      .widget-section {
+        background: rgba(15, 52, 96, 0.6);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: fadeInUp 0.8s ease-out;
+      }
+
+      .widget-section h3 {
+        color: #9146ff;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .widget-url-box {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+      }
+
+      .widget-url-box input {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 15px;
+        background: rgba(26, 26, 46, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+      }
+
+      .widget-url-box button {
+        padding: 12px 25px;
+        background: linear-gradient(135deg, #9146ff 0%, #ff6b9d 100%);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .widget-url-box button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(145, 70, 255, 0.4);
+      }
+
+      .widget-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #9146ff;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+
+      .widget-link:hover {
+        color: #ff6b9d;
+        transform: translateX(5px);
+      }
+
+      /* Подсказка */
+      .hint {
+        background: rgba(145, 70, 255, 0.1);
+        border-left: 4px solid #9146ff;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        color: #ccc;
+        font-size: 0.95em;
+      }
+
+      /* Анимации */
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
         }
-        .card { 
-            background: #0f3460; 
-            padding: 30px; 
-            border-radius: 12px; 
-            max-width: 600px; 
-            margin: 0 auto; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-        h1 { 
-            color: #9146ff; 
-            margin-top: 0;
-            text-align: center;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Адаптивность */
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2em;
+        }
+
         .user-info {
-            background: #1a1a2e;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-align: center;
+          flex-direction: column;
+          text-align: center;
         }
-        .status-box { 
-            margin: 20px 0; 
-            padding: 15px; 
-            background: #1a1a2e; 
-            border-radius: 8px;
-            text-align: center;
-            font-size: 1.1em;
+
+        .button-group {
+          flex-direction: column;
         }
-        #bot-status {
-            font-weight: bold;
+
+        .btn {
+          width: 100%;
+          justify-content: center;
         }
-        .btn { 
-            padding: 12px 30px; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: 600;
-            font-size: 1em;
-            transition: all 0.3s;
-            margin: 5px;
+
+        .widget-url-box {
+          flex-direction: column;
         }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+
+        .widget-url-box input,
+        .widget-url-box button {
+          width: 100%;
         }
-        .btn-start { 
-            background: #00ad03; 
-            color: white; 
+      }
+
+      /* Уведомления */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: rgba(15, 52, 96, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+      }
+
+      .notification.success {
+        border-left: 4px solid #00ad03;
+      }
+
+      .notification.error {
+        border-left: 4px solid #eb0400;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(100px);
         }
-        .btn-stop { 
-            background: #eb0400; 
-            color: white; 
+        to {
+          opacity: 1;
+          transform: translateX(0);
         }
-        .btn-logout {
-            background: #555;
-            color: white;
-        }
-        .hint {
-            color: #aaa;
-            font-size: 0.9em;
-            text-align: center;
-            margin-top: 20px;
-        }
+      }
     </style>
-</head>
-<body>
-    <div class="card">
+  </head>
+  <body>
+    <div class="container">
+      <!-- Заголовок -->
+      <div class="header">
         <h1>🤖 Twitch Bot Panel</h1>
-        
-        {% if session.get('twitch_user') %}
-            <div class="user-info">
-                <p>👤 <strong>{{ session['twitch_user']['login'] }}</strong></p>
-                <p style="margin: 5px 0; color: #888;">ID: {{ session['twitch_user']['id'] }}</p>
-            </div>
-            
-            <div class="status-box">
-                <span id="bot-status">Загрузка статуса...</span>
-            </div>
-            
-            <div style="text-align: center;">
-                <button id="toggle-btn" class="btn btn-start" onclick="toggleBot()">
-                    ▶ Запустить Бота
-                </button>
-                <button class="btn btn-logout" onclick="window.location.href='/logout'">
-                    🚪 Выйти
-                </button>
-            </div>
-            
-            <p class="hint">💡 Бот будет работать в фоновом режиме</p>
+        <p>Управление ботом для стрима</p>
+      </div>
+
+      {% if session.get('twitch_user') %}
+      <!-- Информация о пользователе -->
+      <div class="card">
+        <div class="user-info">
+          <div class="user-avatar">
+            {{ session['twitch_user']['login'][0].upper() }}
+          </div>
+          <div class="user-details">
+            <h3>{{ session['twitch_user']['login'] }}</h3>
+            <p>ID: {{ session['twitch_user']['id'] }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Статус и управление ботом -->
+      <div class="card">
+        <div class="status-section">
+          <div class="status-indicator">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="bot-status">Загрузка...</span>
+          </div>
+
+          <div class="button-group">
+            <button id="toggle-btn" class="btn btn-start" onclick="toggleBot()">
+              <span id="btn-icon">▶</span>
+              <span id="btn-text">Запустить Бота</span>
+            </button>
+            <button class="btn btn-logout" onclick="window.location.href = '/logout'">
+              🚪 Выйти
+            </button>
+          </div>
+
+          <div class="hint">
+            💡 Бот будет работать в фоновом режиме и автоматически перезапустится при падении
+          </div>
+        </div>
+      </div>
+
+      <!-- Секция виджета -->
+      <div class="widget-section">
+        <h3>🎥 Виджет для OBS</h3>
+
+        {% if widget_url %}
+        <p style="color: #ccc; margin-bottom: 15px;">
+          Добавь эту ссылку в OBS как <strong>"Browser Source"</strong>:
+        </p>
+        <div class="widget-url-box">
+          <input type="text" id="widgetUrl" value="{{ widget_url }}" readonly />
+          <button onclick="copyWidgetUrl()">📋 Копировать</button>
+        </div>
+        <a href="{{ widget_url }}" target="_blank" class="widget-link">
+          🔗 Открыть виджет в новой вкладке →
+        </a>
         {% else %}
-            <div style="text-align: center;">
-                <p>⚠️ Вы не авторизованы</p>
-                <button class="btn btn-start" onclick="window.location.href='/oauth/login'">
-                    🔐 Войти через Twitch
-                </button>
-            </div>
+        <p style="color: #ff6b9d;">
+          ⚠️ Токен виджета не найден. Попробуй 
+          <a href="/oauth/login" style="color: #9146ff;">войти заново</a>.
+        </p>
         {% endif %}
+      </div>
+      {% else %}
+      <!-- Не авторизован -->
+      <div class="card">
+        <div class="status-section">
+          <p style="font-size: 1.2em; margin-bottom: 20px;">⚠️ Вы не авторизованы</p>
+          <button class="btn btn-start" onclick="window.location.href = '/oauth/login'">
+            🔐 Войти через Twitch
+          </button>
+        </div>
+      </div>
+      {% endif %}
     </div>
 
     <script>
-        let isRunning = false;
+      let isRunning = false;
+
+      // Показать уведомление
+      function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+      }
+
+      // Копирование ссылки
+      function copyWidgetUrl() {
+        const input = document.getElementById("widgetUrl");
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+          showNotification('✅ Ссылка скопирована!');
+        });
+      }
+
+      // Проверка статуса
+      async function checkStatus() {
+        try {
+          const res = await fetch("/bot_status");
+          const data = await res.json();
+
+          const statusEl = document.getElementById("bot-status");
+          const statusDot = document.getElementById("status-dot");
+          const btn = document.getElementById("toggle-btn");
+          const btnIcon = document.getElementById("btn-icon");
+          const btnText = document.getElementById("btn-text");
+
+          if (!statusEl || !btn) return;
+
+          if (data.status === "running") {
+            statusEl.innerText = "РАБОТАЕТ";
+            statusEl.style.color = "#00ad03";
+            statusDot.className = "status-dot running";
+            btnIcon.innerText = "🛑";
+            btnText.innerText = "Остановить Бота";
+            btn.className = "btn btn-stop";
+            isRunning = true;
+          } else {
+            statusEl.innerText = "ОСТАНОВЛЕН";
+            statusEl.style.color = "#eb0400";
+            statusDot.className = "status-dot stopped";
+            btnIcon.innerText = "▶";
+            btnText.innerText = "Запустить Бота";
+            btn.className = "btn btn-start";
+            isRunning = false;
+          }
+        } catch (e) {
+          console.error("Error checking status:", e);
+        }
+      }
+
+      // Переключение бота
+      async function toggleBot() {
+        const action = isRunning ? "stop_bot" : "start_bot";
+        const btn = document.getElementById("toggle-btn");
         
-        async function checkStatus() {
-            try {
-                const res = await fetch('/bot_status');
-                const data = await res.json();
-                
-                const statusEl = document.getElementById('bot-status');
-                const btn = document.getElementById('toggle-btn');
-                
-                if (!statusEl || !btn) {
-                    console.error('Elements not found');
-                    return;
-                }
-                
-                if (data.status === 'running') {
-                    statusEl.innerText = "🟢 РАБОТАЕТ";
-                    statusEl.style.color = "#00ad03";
-                    btn.innerText = "🛑 Остановить Бота";
-                    btn.className = "btn btn-stop";
-                    isRunning = true;
-                } else {
-                    statusEl.innerText = "🔴 ОСТАНОВЛЕН";
-                    statusEl.style.color = "#eb0400";
-                    btn.innerText = "▶ Запустить Бота";
-                    btn.className = "btn btn-start";
-                    isRunning = false;
-                }
-            } catch (e) { 
-                console.error("Error checking status:", e); 
-            }
-        }
+        if (btn) btn.disabled = true;
 
-        async function toggleBot() {
-            const action = isRunning ? 'stop_bot' : 'start_bot';
-            
-            console.log(`🔄 Sending ${action} request...`);
-            
-            const btn = document.getElementById('toggle-btn');
-            if (btn) btn.disabled = true;
-            
-            try {
-                const res = await fetch(`/${action}`, { 
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'}
-                });
-                
-                const data = await res.json();
-                console.log('📨 Response:', data);
-                
-                if (data.status === 'error') {
-                    alert('❌ ' + data.message);
-                } else {
-                    alert('✅ ' + data.message);
-                    await checkStatus();
-                }
-            } catch (err) {
-                console.error('❌ Error:', err);
-                alert('Failed to communicate with server');
-            } finally {
-                if (btn) btn.disabled = false;
-            }
-        }
+        try {
+          const res = await fetch(`/${action}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
 
-        // Запуск проверки при загрузке страницы
-        document.addEventListener('DOMContentLoaded', checkStatus);
+          const data = await res.json();
+
+          if (data.status === "error") {
+            showNotification('❌ ' + data.message, 'error');
+          } else {
+            showNotification('✅ ' + data.message);
+            await checkStatus();
+          }
+        } catch (err) {
+          console.error("❌ Error:", err);
+          showNotification('Ошибка связи с сервером', 'error');
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      // Запуск при загрузке
+      document.addEventListener("DOMContentLoaded", checkStatus);
+      
+      // Автообновление статуса каждые 5 секунд
+      setInterval(checkStatus, 5000);
     </script>
-</body>
+  </body>
 </html>
