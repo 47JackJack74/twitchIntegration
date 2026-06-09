@@ -37,7 +37,7 @@ def watchdog():
     use_ssl = os.getenv("USE_SSL", "false").lower() == "true"
     port = int(os.getenv("FLASK_PORT", 5000))
     scheme = "https" if use_ssl else "http"
-    url = f'{scheme}://localhost:{port}/'
+    url = f'{scheme}://localhost:{port}/bot_status'
     
     print(f"🔍 Watchdog started, checking {url} every {check_interval}s")
     
