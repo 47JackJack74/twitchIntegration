@@ -13,6 +13,14 @@ import time
 import signal
 import sys
 
+# Подавляем предупреждения
+import warnings
+import urllib3
+
+warnings.filterwarnings("ignore", message="Eventlet is deprecated")
+warnings.filterwarnings("ignore", message="EventletDeprecationWarning")
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 def watchdog():
     """Перезапускает процесс, если сервер не отвечает 3 минуты"""
     import requests
